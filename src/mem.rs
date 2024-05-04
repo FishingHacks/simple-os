@@ -1,7 +1,9 @@
+use core::cell::LazyCell;
+
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
     structures::paging::{
-        FrameAllocator, OffsetPageTable, PageTable, PhysFrame, Size4KiB,
+        FrameAllocator, FrameDeallocator, OffsetPageTable, PageTable, PhysFrame, Size4KiB
     },
     PhysAddr, VirtAddr,
 };
@@ -10,6 +12,8 @@ pub unsafe fn init(offset: VirtAddr) -> OffsetPageTable<'static> {
     let level_4_table = active_level_4_table(offset);
     OffsetPageTable::new(level_4_table, offset)
 }
+
+pub const PAGE_SIZE: usize = 4096;
 
 /// Returns a mutable reference to the active level 4 table.
 ///
@@ -37,6 +41,8 @@ unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
     }
 }
 
+// pub static allocator: BootInfoFrameAllocator = ;
+
 pub struct BootInfoFrameAllocator {
     memory_map: &'static MemoryMap,
     next: usize,
@@ -48,11 +54,11 @@ impl BootInfoFrameAllocator {
     /// This function is unsafe because the caller must guarantee that the passed
     /// memory map is valid. The main requirement is that all frames that are marked
     /// as `USABLE` in it are really unused.
-    pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
-        BootInfoFrameAllocator {
+    pub unsafe fn init(memory_map: &'static MemoryMap) {
+        let me = BootInfoFrameAllocator {
             memory_map,
             next: 0,
-        }
+        };
     }
 
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
@@ -71,6 +77,7 @@ impl BootInfoFrameAllocator {
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
+        
         let frame = self.usable_frames().nth(self.next);
         self.next += 1;
         frame

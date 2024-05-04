@@ -5,7 +5,8 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-pub mod ata_pio;
+pub mod drivers;
+pub mod pci;
 pub mod mem;
 pub mod gdt;
 pub mod interrupts;

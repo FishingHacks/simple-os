@@ -7,6 +7,7 @@
 extern crate alloc;
 
 use bootloader::{entry_point, BootInfo};
+use skyos::pci::PCIManager;
 use core::panic::PanicInfo;
 use skyos::cmdline::CMD_LINE;
 use skyos::vga_buffer::enable_cursor;
@@ -17,6 +18,8 @@ fn run(boot_info: &'static BootInfo) {
     enable_cursor();
     shared_init();
     init_memory(boot_info);
+    
+    PCIManager::new().scan();
 
     without_interrupts(|| CMD_LINE.lock().init());
 
